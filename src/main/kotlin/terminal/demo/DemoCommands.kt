@@ -13,6 +13,18 @@ fun processLine(
     if (line == "/quit" || line == "/q") return true
     when {
         line == "/clear" -> DemoView.clearAndShowBanner(buffer, config)
+        line.startsWith("/resize ") -> {
+            val parts = line.removePrefix("/resize ").trim().split(Regex("\\s+"))
+            val w = parts.getOrNull(0)?.toIntOrNull()
+            val h = parts.getOrNull(1)?.toIntOrNull()
+            if (w != null && h != null) {
+                buffer.resize(w, h)
+                DemoView.redraw(buffer)
+            } else {
+                buffer.write("Expected format: /resize W H (two integers)\n")
+                DemoView.redraw(buffer)
+            }
+        }
         line.startsWith("/color ") -> {
             val name = line.removePrefix("/color ").trim().lowercase()
             config.colorMap[name]?.let { DemoView.setForeground(buffer, it) }

@@ -111,6 +111,10 @@ class TerminalBuffer(
         scrollback.clear()
     }
 
+    /** Resize the screen to [newWidth]×[newHeight]. Content is truncated or padded; cursor is clamped. */
+    fun resize(newWidth: Int, newHeight: Int) {
+        BufferResize.apply(this, newWidth, newHeight)
+    }
 
     internal fun lineAt(lineIndex: Int): List<Cell>? = when {
         lineIndex < 0 -> null

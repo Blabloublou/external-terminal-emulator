@@ -29,7 +29,7 @@ object DemoView {
         buffer.setForeground(TerminalColor.BrightCyan)
         buffer.write("Terminal Buffer\n")
         buffer.setForeground(TerminalColor.BrightBlack)
-        buffer.write("Type text and press Enter. Commands: /color, /background, /style, /quit\n\n")
+        buffer.write("Type text and press Enter. Commands: /resize W H, /color, /background, /style, /quit\n\n")
         buffer.setForeground(TerminalColor.Default)
         redraw(buffer)
     }
