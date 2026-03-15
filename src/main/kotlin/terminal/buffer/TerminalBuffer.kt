@@ -14,14 +14,22 @@ import terminal.model.enum.WideCharRole
 class TerminalBuffer(
     width: Int,
     height: Int,
-    private val maxScrollbackSize: Int,
+    maxScrollbackSize: Int,
 ) {
     internal var _width = width.coerceAtLeast(1)
     internal var _height = height.coerceAtLeast(1)
-    internal val _maxScrollbackSize = maxScrollbackSize.coerceAtLeast(0)
+    internal var _maxScrollbackSize = maxScrollbackSize.coerceAtLeast(0)
 
     val width: Int get() = _width
     val height: Int get() = _height
+
+    var maxScrollbackSize: Int
+        get() = _maxScrollbackSize
+        set(value) {
+            val n = value.coerceAtLeast(0)
+            _maxScrollbackSize = n
+            while (scrollback.size > _maxScrollbackSize) scrollback.removeAt(0)
+        }
 
     internal val screen: MutableList<MutableList<Cell>> = MutableList(_height) {
         MutableList(_width) { Cell.EMPTY }
@@ -77,7 +85,6 @@ class TerminalBuffer(
     private fun emptyLine(): MutableList<Cell> = MutableList(_width) { Cell.EMPTY }
 
 
-    fun getCursor(): Cursor = cursor
     fun getCursorColumn(): Int = cursor.column
     fun getCursorRow(): Int = cursor.row
     fun getCursorStyle(): CursorStyle = cursor.style
@@ -177,12 +184,12 @@ class TerminalBuffer(
 
     fun getFullContent(): String = BufferContentAccess.getFullContent(this)
 
-    fun scrollbackSize(): Int = scrollback.size
+    val scrollbackSize: Int get() = scrollback.size
 
-    fun totalLineCount(): Int = scrollback.size + _height
+    val totalLineCount: Int get() = scrollback.size + _height
 
     fun getDisplayColumn(screenRow: Int, bufferColumn: Int): Int {
-        val lineIndex = scrollbackSize() + screenRow.coerceIn(0, _height - 1)
+        val lineIndex = scrollbackSize + screenRow.coerceIn(0, _height - 1)
         val col = bufferColumn.coerceIn(0, _width)
         var displayCol = 1
         for (c in 0 until col) {

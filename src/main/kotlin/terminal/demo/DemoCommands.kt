@@ -14,6 +14,42 @@ fun processLine(
     when {
         line == "/help" || line == "/h" -> DemoView.showHelp(buffer, config)
         line == "/clear" -> DemoView.clearAndShowBanner(buffer, config)
+        line.startsWith("/scrollback") -> {
+            val arg = line.removePrefix("/scrollback").trim()
+            if (arg.isBlank()) {
+                buffer.write("Max scrollback: ${buffer.maxScrollbackSize} lines. Use /scrollback <N> to change.\n")
+            } else {
+                val n = arg.toIntOrNull()
+                if (n != null && n >= 0) {
+                    buffer.maxScrollbackSize = n
+                    buffer.write("Max scrollback set to $n lines.\n")
+                } else {
+                    buffer.write("Usage: /scrollback <N> (N = non-negative integer)\n")
+                }
+            }
+            DemoView.redraw(buffer)
+        }
+        line.startsWith("/scroll") -> {
+            val arg = line.removePrefix("/scroll").trim().lowercase()
+            when (arg) {
+                "on", "1", "yes" -> {
+                    config.scrollModeEnabled = true
+                    buffer.write("Scroll mode on: ↑/↓ will scroll buffer history.\n")
+                }
+                "off", "0", "no" -> {
+                    config.scrollModeEnabled = false
+                    buffer.write("Scroll mode off: ↑/↓ will browse command history when line is empty.\n")
+                }
+                "" -> {
+                    val state = if (config.scrollModeEnabled) "on" else "off"
+                    buffer.write("Scroll mode is $state. Use /scroll on or /scroll off to change.\n")
+                }
+                else -> {
+                    buffer.write("Usage: /scroll [on|off]\n")
+                }
+            }
+            DemoView.redraw(buffer)
+        }
         line.startsWith("/resize ") -> {
             val parts = line.removePrefix("/resize ").trim().split(Regex("\\s+"))
             val w = parts.getOrNull(0)?.toIntOrNull()

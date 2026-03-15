@@ -38,7 +38,7 @@ object BufferWrite {
         }
     }
 
-    fun writeWideChar(buffer: TerminalBuffer, c: Char) {
+    private fun writeWideChar(buffer: TerminalBuffer, c: Char) {
         if (buffer.cursor.column + 1 >= buffer._width) {
             buffer.clearWideCharAt(buffer.cursor.row, buffer.cursor.column)
             buffer.screen[buffer.cursor.row][buffer.cursor.column] = buffer.cellWithCurrentAttributes(null)

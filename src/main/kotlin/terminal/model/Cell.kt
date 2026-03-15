@@ -24,14 +24,6 @@ data class Cell(
             wideCharRole = WideCharRole.Normal,
         )
 
-        /** Placeholder right-half cell of a wide character. */
-        val CONTINUATION = Cell(
-            char = null,
-            foreground = TerminalColor.Default,
-            background = TerminalColor.Default,
-            wideCharRole = WideCharRole.WideContinuation,
-        )
-
         /** Empty cell represented as space for string output. */
         const val EMPTY_CHAR_REPR = ' '
     }

@@ -19,6 +19,8 @@ data class SavedDemoConfig(
  * Demo configuration: color and style name maps, commands, help text.
  */
 object DemoConfig {
+    var scrollModeEnabled: Boolean = false
+
     val savedConfigurations: MutableMap<String, SavedDemoConfig> = mutableMapOf()
     val colorMap: Map<String, TerminalColor> = mapOf(
         "default" to TerminalColor.Default,
@@ -58,7 +60,9 @@ object DemoConfig {
         "/help, /h" to "Show this help",
         "/quit, /q" to "Exit the demo",
         "← →" to "Move cursor on the line (real terminal only)",
-        "↑ ↓ (line empty)" to "Navigate command history (real terminal only)",
+        "↑ ↓ (line empty)" to "History or scrollback (see /scroll)",
+        "/scroll [on|off]" to "Use ↑/↓ to scroll buffer history (on) or command history (off, default)",
+        "/scrollback <N>" to "Set max scrollback size in lines (e.g. /scrollback 1000)",
         "/clear" to "Clear screen and show banner",
         "/resize W H" to "Resize terminal (e.g. /resize 80 24)",
         "/color <name>" to "Set foreground color",
@@ -69,21 +73,36 @@ object DemoConfig {
         "/select <name>" to "Apply a saved configuration",
     )
 
-    fun buildHelpText(): String = buildString {
+    private fun wrap(line: String, width: Int): String {
+        if (width < 1 || line.length <= width) return line
+        return buildString {
+            var remaining = line
+            while (remaining.length > width) {
+                val chunk = remaining.take(width + 1)
+                val lastSpace = chunk.lastIndexOf(' ')
+                val breakAt = if (lastSpace > 0) lastSpace else width
+                append(remaining.take(breakAt)).append("\n")
+                remaining = remaining.drop(breakAt).trimStart()
+            }
+            if (remaining.isNotEmpty()) append(remaining)
+        }
+    }
+
+    fun buildHelpText(width: Int = 80): String = buildString {
         append("--- Commands ---\n")
         for ((cmd, desc) in commands) {
-            append("  $cmd  $desc\n")
+            append(wrap("  $cmd  $desc", width)).append("\n")
         }
         append("\n--- Colors (for /color and /background) ---\n")
-        append("  ${colorMap.keys.sorted().joinToString(", ")}\n")
+        append(wrap("  ${colorMap.keys.sorted().joinToString(", ")}", width)).append("\n")
         append("\n--- Styles (for /style, use 'off' to reset) ---\n")
-        append("  ${styleMap.keys.joinToString(", ")}\n")
+        append(wrap("  ${styleMap.keys.joinToString(", ")}", width)).append("\n")
         append("\n--- Cursor (/cursor) ---\n")
-        append("  Shapes: ${cursorShapeMap.keys.joinToString(", ")}\n")
-        append("  Visibility: hide, show. Blink: blink, noblink\n")
+        append(wrap("  Shapes: ${cursorShapeMap.keys.joinToString(", ")}", width)).append("\n")
+        append(wrap("  Visibility: hide, show. Blink: blink, noblink", width)).append("\n")
         if (savedConfigurations.isNotEmpty()) {
             append("\n--- Saved configurations (/select <name>) ---\n")
-            append("  ${savedConfigurations.keys.sorted().joinToString(", ")}\n")
+            append(wrap("  ${savedConfigurations.keys.sorted().joinToString(", ")}", width)).append("\n")
         }
     }
 }

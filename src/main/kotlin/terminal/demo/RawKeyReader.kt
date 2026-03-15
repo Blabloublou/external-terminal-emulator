@@ -1,43 +1,41 @@
 package terminal.demo
 
-import java.io.PushbackInputStream
-import java.io.InputStream
+import java.io.PushbackReader
+import java.io.Reader
 
 /**
- * Reads key-by-key from an input stream.
  */
-class RawKeyReader(input: InputStream) {
+class RawKeyReader(reader: Reader) {
 
-    private val input = PushbackInputStream(input.buffered(), 4)
-
+    private val input = PushbackReader(reader.buffered(), 4)
 
     fun readKey(): KeyInput {
-        val b = input.read()
-        if (b < 0) return KeyInput.Eof
+        val c = input.read()
+        if (c < 0) return KeyInput.Eof
 
-        when (b) {
+        when (c) {
             0x0d, 0x0a -> return KeyInput.Enter
             0x7f, 0x08 -> return KeyInput.Backspace
             0x1b -> return readEscapeSequence()
-            else -> return KeyInput.Print(b.toChar())
+            else -> return KeyInput.Print(c.toChar())
         }
     }
 
     private fun readEscapeSequence(): KeyInput {
-        val b1 = input.read()
-        if (b1 < 0) return KeyInput.Eof
-        if (b1 != '['.code) {
-            input.unread(b1)
+        val c1 = input.read()
+        if (c1 < 0) return KeyInput.Eof
+        if (c1 != '['.code) {
+            input.unread(c1)
             return KeyInput.Print(0x1b.toChar())
         }
-        val b2 = input.read()
-        if (b2 < 0) return KeyInput.Eof
-        return when (b2) {
+        val c2 = input.read()
+        if (c2 < 0) return KeyInput.Eof
+        return when (c2) {
             'A'.code -> KeyInput.ArrowUp
             'B'.code -> KeyInput.ArrowDown
             'C'.code -> KeyInput.ArrowRight
             'D'.code -> KeyInput.ArrowLeft
-            else -> KeyInput.Print(0x1b.toChar())
+            else -> KeyInput.Print(0x1b.toChar()) 
         }
     }
 }

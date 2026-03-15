@@ -31,9 +31,9 @@ object BufferContentAccess {
 
     fun getScreenContent(buffer: TerminalBuffer): String =
         (0 until buffer.height).joinToString("\n") { row ->
-            getLineAsString(buffer, buffer.scrollbackSize() + row)
+            getLineAsString(buffer, buffer.scrollbackSize + row)
         }
 
     fun getFullContent(buffer: TerminalBuffer): String =
-        (0 until buffer.totalLineCount()).joinToString("\n") { getLineAsString(buffer, it) }
+        (0 until buffer.totalLineCount).joinToString("\n") { getLineAsString(buffer, it) }
 }

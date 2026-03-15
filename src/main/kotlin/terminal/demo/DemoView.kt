@@ -31,13 +31,13 @@ private fun cursorShapeSequence(shape: CursorShape, blink: Boolean): String {
  */
 object DemoView {
 
-    fun redraw(buffer: TerminalBuffer, blinkCursorVisible: Boolean? = null) {
+    fun redraw(buffer: TerminalBuffer, blinkCursorVisible: Boolean? = null, scrollOffset: Int = 0) {
         val phase = blinkCursorVisible ?: blinkPhase
         val cursorStyle = buffer.getCursorStyle()
-        val showCursor = cursorStyle.visible && (!cursorStyle.blink || phase)
+        val showCursor = scrollOffset == 0 && cursorStyle.visible && (!cursorStyle.blink || phase)
         val cursorRow = buffer.getCursorRow()
         val cursorCol = buffer.getCursorColumn()
-        val displayCol = buffer.getDisplayColumn(cursorRow, cursorCol)
+        val displayCol = 1 + cursorCol
         val cursorChar = when (cursorStyle.shape) {
             CursorShape.Block -> '▌'
             CursorShape.Underline -> '▁'
@@ -46,18 +46,30 @@ object DemoView {
         print(buildString {
             append("\u001b[?25l")
             append("\u001b[H\u001b[2J")
-            for (row in 0 until buffer.height) {
-                append("\u001b[${row + 1};1H")
-                if (showCursor) {
-                    append(AnsiRenderer.renderLine(buffer, row))
-                } else {
-                    append(AnsiRenderer.renderLine(buffer, row, cursorRow, cursorCol, cursorChar))
+            if (scrollOffset > 0) {
+                val effectiveOffset = scrollOffset.coerceIn(0, buffer.scrollbackSize)
+                val fromLine = buffer.scrollbackSize - effectiveOffset
+                val linesText = AnsiRenderer.renderLines(buffer, fromLine, buffer.height)
+                val lineList = linesText.split("\n").take(buffer.height)
+                for (row in 0 until buffer.height) {
+                    append("\u001b[${row + 1};1H")
+                    if (row < lineList.size) append(lineList[row])
+                    else append("\u001b[K")
                 }
-            }
-            append("\u001b[${cursorRow + 1};${displayCol}H")
-            if (showCursor) {
-                append(cursorShapeSequence(cursorStyle.shape, cursorStyle.blink))
-                append("\u001b[?25h")
+            } else {
+                for (row in 0 until buffer.height) {
+                    append("\u001b[${row + 1};1H")
+                    if (showCursor) {
+                        append(AnsiRenderer.renderLine(buffer, row))
+                    } else {
+                        append(AnsiRenderer.renderLine(buffer, row, cursorRow, cursorCol, cursorChar))
+                    }
+                }
+                append("\u001b[${cursorRow + 1};${displayCol}H")
+                if (showCursor) {
+                    append(cursorShapeSequence(cursorStyle.shape, cursorStyle.blink))
+                    append("\u001b[?25h")
+                }
             }
         })
         System.out.flush()
@@ -68,7 +80,7 @@ object DemoView {
         buffer.setForeground(TerminalColor.BrightCyan)
         buffer.write("Terminal Buffer\n")
         buffer.setForeground(TerminalColor.BrightBlack)
-        buffer.write("Type text and press Enter. Use /help for all commands.\n\n")
+        buffer.write("Type text and press Enter. Use /help for all commands.\n")
         buffer.setForeground(TerminalColor.Default)
         redraw(buffer)
     }
@@ -76,7 +88,7 @@ object DemoView {
     fun showHelp(buffer: TerminalBuffer, config: DemoConfig) {
         buffer.write("\n")
         buffer.setForeground(TerminalColor.BrightCyan)
-        buffer.write(config.buildHelpText())
+        buffer.write(config.buildHelpText(buffer.width))
         buffer.setForeground(TerminalColor.Default)
         buffer.write("\n")
         redraw(buffer)

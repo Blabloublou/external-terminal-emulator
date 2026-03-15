@@ -98,9 +98,26 @@ object BufferInsert {
             buffer.cursor.row = r
         }
         if (oldAtSecondLast != Cell.EMPTY || oldAtLast != Cell.EMPTY) {
-            var row = buffer.cursor.row
+            var row = if (buffer.cursor.column > 0) r + 1 else buffer.cursor.row
             var cell1 = oldAtSecondLast
             var cell2 = oldAtLast
+            if (row >= buffer._height) {
+                buffer.scrollUp()
+                row = buffer._height - 1
+                buffer.screen[row][0] = cell1
+                buffer.screen[row][1] = cell2
+                buffer.cursor.column = 2
+                buffer.cursor.row = row
+                if (buffer.cursor.column >= buffer._width) {
+                    buffer.cursor.column = 0
+                    buffer.cursor.row = row + 1
+                    if (buffer.cursor.row >= buffer._height) {
+                        buffer.scrollUp()
+                        buffer.cursor.row = buffer._height - 1
+                    }
+                }
+                return
+            }
             while (row < buffer._height) {
                 val line2 = buffer.screen[row]
                 val n1 = line2[buffer._width - 2]

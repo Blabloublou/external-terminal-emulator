@@ -61,30 +61,29 @@ object AnsiRenderer {
         }
     }
 
-    fun renderScreen(buffer: TerminalBuffer): String =
-        renderScreenInternal(buffer, cursorRow = -1, cursorCol = -1)
-
-    fun renderLine(
+    private fun renderLineInto(
         buffer: TerminalBuffer,
-        row: Int,
-        cursorRow: Int = -1,
-        cursorCol: Int = -1,
-        cursorChar: Char = '▌',
-    ): String {
-        val sb = StringBuilder()
-        val width = buffer.width
-        val lineIndex = buffer.scrollbackSize() + row.coerceIn(0, buffer.height - 1)
+        lineIndex: Int,
+        screenRow: Int,
+        sb: StringBuilder,
+        cursorRow: Int,
+        cursorCol: Int,
+        cursorChar: Char,
+    ) {
         var lastFg: TerminalColor? = null
         var lastBg: TerminalColor? = null
         var lastStyles: Set<Style>? = null
-        for (col in 0 until width) {
+
+        for (col in 0 until buffer.width) {
             val cell = buffer.getAttributes(lineIndex, col) ?: Cell.EMPTY
-            if (cell.wideCharRole == WideCharRole.WideContinuation) continue
-            if (row == cursorRow && col == cursorCol) {
+            val charToShow = if (cell.wideCharRole == WideCharRole.WideContinuation) ' ' else cell.charForDisplay()
+
+            if (cell.wideCharRole != WideCharRole.WideContinuation && screenRow == cursorRow && col == cursorCol) {
                 sb.append(RESET).append("\u001b[7m").append(cursorChar).append(RESET)
                 lastFg = null; lastBg = null; lastStyles = null
                 continue
             }
+
             val fg = cell.foreground
             val bg = cell.background
             val styles = cell.styles
@@ -92,6 +91,7 @@ object AnsiRenderer {
             val hadFormatting = (lastFg != null && lastFg != TerminalColor.Default) ||
                 (lastBg != null && lastBg != TerminalColor.Default) ||
                 (lastStyles != null && lastStyles.isNotEmpty())
+
             if (isDefaultCell && hadFormatting) {
                 sb.append(RESET)
                 lastFg = null; lastBg = null; lastStyles = null
@@ -103,8 +103,23 @@ object AnsiRenderer {
                 lastFg = fg; lastBg = bg; lastStyles = styles
                 if (codes.isNotEmpty()) sb.append("\u001b[").append(codes.joinToString(";")).append("m")
             }
-            sb.append(cell.charForDisplay())
+            sb.append(charToShow)
         }
+    }
+
+    fun renderScreen(buffer: TerminalBuffer): String =
+        renderScreenInternal(buffer, cursorRow = -1, cursorCol = -1)
+
+    fun renderLine(
+        buffer: TerminalBuffer,
+        row: Int,
+        cursorRow: Int = -1,
+        cursorCol: Int = -1,
+        cursorChar: Char = '▌',
+    ): String {
+        val sb = StringBuilder()
+        val lineIndex = buffer.scrollbackSize + row.coerceIn(0, buffer.height - 1)
+        renderLineInto(buffer, lineIndex, row, sb, cursorRow, cursorCol, cursorChar)
         return sb.append(RESET).toString()
     }
 
@@ -119,7 +134,7 @@ object AnsiRenderer {
         val char = cursorChar ?: when (style.shape) {
             CursorShape.Block -> '▌'
             CursorShape.Underline -> '▁'
-            CursorShape.Bar -> '|' // ASCII pipe = thin vertical bar
+            CursorShape.Bar -> '|'
         }
         return renderScreenInternal(buffer, buffer.getCursorRow(), buffer.getCursorColumn(), char)
     }
@@ -131,101 +146,24 @@ object AnsiRenderer {
         cursorChar: Char = '▌',
     ): String {
         val sb = StringBuilder()
-        val height = buffer.height
-        val width = buffer.width
-        val scrollbackSize = buffer.scrollbackSize()
-        var lastFg: TerminalColor? = null
-        var lastBg: TerminalColor? = null
-        var lastStyles: Set<Style>? = null
+        val scrollbackSize = buffer.scrollbackSize
 
-        for (row in 0 until height) {
+        for (row in 0 until buffer.height) {
             val lineIndex = scrollbackSize + row
-            for (col in 0 until width) {
-                val cell = buffer.getAttributes(lineIndex, col) ?: Cell.EMPTY
-                if (cell.wideCharRole == WideCharRole.WideContinuation) continue
-
-                if (row == cursorRow && col == cursorCol) {
-                    sb.append(RESET).append("\u001b[7m").append(cursorChar).append(RESET)
-                    lastFg = null; lastBg = null; lastStyles = null
-                    continue
-                }
-
-                val fg = cell.foreground
-                val bg = cell.background
-                val styles = cell.styles
-                val isDefaultCell = fg == TerminalColor.Default && bg == TerminalColor.Default && styles.isEmpty()
-                val hadFormatting = (lastFg != null && lastFg != TerminalColor.Default) ||
-                    (lastBg != null && lastBg != TerminalColor.Default) ||
-                    (lastStyles != null && lastStyles.isNotEmpty())
-
-                if (isDefaultCell && hadFormatting) {
-                    sb.append(RESET)
-                    lastFg = null
-                    lastBg = null
-                    lastStyles = null
-                } else {
-                    val codes = mutableListOf<String>()
-                    if (fg != lastFg) fgCode(fg)?.let { codes.add(it) }
-                    if (bg != lastBg) bgCode(bg)?.let { codes.add(it) }
-                    if (styles != lastStyles) styleCodes(styles).forEach { codes.add(it) }
-                    lastFg = fg
-                    lastBg = bg
-                    lastStyles = styles
-                    if (codes.isNotEmpty()) {
-                        sb.append("\u001b[").append(codes.joinToString(";")).append("m")
-                    }
-                }
-                sb.append(cell.charForDisplay())
-            }
+            renderLineInto(buffer, lineIndex, row, sb, cursorRow, cursorCol, cursorChar)
             sb.append(RESET).append("\n")
-            lastFg = null; lastBg = null; lastStyles = null
         }
         return sb.append(RESET).toString()
     }
 
     fun renderLines(buffer: TerminalBuffer, fromLine: Int, maxLines: Int): String {
         val sb = StringBuilder()
-        val width = buffer.width
-        val total = buffer.totalLineCount()
-        var lastFg: TerminalColor? = null
-        var lastBg: TerminalColor? = null
-        var lastStyles: Set<Style>? = null
+        val total = buffer.totalLineCount
 
         for (lineIndex in fromLine until minOf(fromLine + maxLines, total)) {
-            for (col in 0 until width) {
-                val cell = buffer.getAttributes(lineIndex, col) ?: Cell.EMPTY
-                if (cell.wideCharRole == WideCharRole.WideContinuation) continue
-                val fg = cell.foreground
-                val bg = cell.background
-                val styles = cell.styles
-                val isDefaultCell = fg == TerminalColor.Default && bg == TerminalColor.Default && styles.isEmpty()
-                val hadFormatting = (lastFg != null && lastFg != TerminalColor.Default) ||
-                    (lastBg != null && lastBg != TerminalColor.Default) ||
-                    (lastStyles != null && lastStyles.isNotEmpty())
-
-                if (isDefaultCell && hadFormatting) {
-                    sb.append(RESET)
-                    lastFg = null
-                    lastBg = null
-                    lastStyles = null
-                } else {
-                    val codes = mutableListOf<String>()
-                    if (fg != lastFg) fgCode(fg)?.let { codes.add(it) }
-                    if (bg != lastBg) bgCode(bg)?.let { codes.add(it) }
-                    if (styles != lastStyles) styleCodes(styles).forEach { codes.add(it) }
-                    if (codes.isNotEmpty()) {
-                        sb.append("\u001b[").append(codes.joinToString(";")).append("m")
-                    }
-                    lastFg = fg
-                    lastBg = bg
-                    lastStyles = styles
-                }
-                sb.append(cell.charForDisplay())
-            }
+            val screenRow = lineIndex - buffer.scrollbackSize
+            renderLineInto(buffer, lineIndex, screenRow, sb, -1, -1, ' ')
             sb.append(RESET).append("\n")
-            lastFg = null
-            lastBg = null
-            lastStyles = null
         }
         return sb.append(RESET).toString()
     }
