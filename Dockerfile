@@ -1,4 +1,4 @@
-FROM gradle:8.5-jdk17 AS builder
+FROM gradle:8.5-jdk17
 
 WORKDIR /app
 
@@ -8,9 +8,4 @@ RUN gradle dependencies --quiet
 COPY src src
 RUN gradle installDist --no-daemon --quiet
 
-FROM eclipse-temurin:17-jre
-
-WORKDIR /app
-COPY --from=builder /app/build/install/terminal-buffer /app/app
-
-CMD ["/app/app/bin/terminal-buffer"]
+CMD ["/app/build/install/terminal-buffer/bin/terminal-buffer"]
