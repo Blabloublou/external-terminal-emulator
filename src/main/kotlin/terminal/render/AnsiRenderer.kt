@@ -161,9 +161,9 @@ object AnsiRenderer {
                     lastStyles = null
                 } else {
                     val codes = mutableListOf<String>()
-                    fgCode(fg)?.let { codes.add(it) }
-                    bgCode(bg)?.let { codes.add(it) }
-                    styleCodes(styles).forEach { codes.add(it) }
+                    if (fg != lastFg) fgCode(fg)?.let { codes.add(it) }
+                    if (bg != lastBg) bgCode(bg)?.let { codes.add(it) }
+                    if (styles != lastStyles) styleCodes(styles).forEach { codes.add(it) }
                     if (codes.isNotEmpty()) {
                         sb.append("\u001b[").append(codes.joinToString(";")).append("m")
                     }

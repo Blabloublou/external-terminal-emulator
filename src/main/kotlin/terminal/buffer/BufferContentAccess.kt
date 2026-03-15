@@ -4,8 +4,7 @@ import terminal.model.Cell
 import terminal.model.enum.WideCharRole
 
 /**
- * Content access: get char, attributes, or line/screen/full content as strings.
- * Uses [TerminalBuffer.lineAt] (internal) for line lookup.
+ * Content access.
  */
 object BufferContentAccess {
     fun getChar(buffer: TerminalBuffer, lineIndex: Int, col: Int): Char? {
@@ -20,7 +19,7 @@ object BufferContentAccess {
         return line[col]
     }
 
-    /** Line as string (empty cell = space). Continuation cells are skipped. */
+    /** Line as string. Continuation cells are skipped. */
     fun getLineAsString(buffer: TerminalBuffer, lineIndex: Int): String {
         val line = buffer.lineAt(lineIndex) ?: return ""
         return buildString {

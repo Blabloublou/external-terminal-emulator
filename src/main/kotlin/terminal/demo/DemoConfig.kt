@@ -19,7 +19,6 @@ data class SavedDemoConfig(
  * Demo configuration: color and style name maps, commands, help text.
  */
 object DemoConfig {
-    /** Named configurations saved with /save, applied with /select. */
     val savedConfigurations: MutableMap<String, SavedDemoConfig> = mutableMapOf()
     val colorMap: Map<String, TerminalColor> = mapOf(
         "default" to TerminalColor.Default,

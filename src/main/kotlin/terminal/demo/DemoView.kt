@@ -14,16 +14,15 @@ object DemoView {
         val row = buffer.getCursorRow() + 1
         val col = buffer.getCursorColumn() + 1
         print(buildString {
-            append("\u001b[?25l")
+            append("\u001b[?25l")  // hide terminal cursor so our drawn cursor is visible
             append("\u001b[2J\u001b[H")
-            append(AnsiRenderer.renderScreen(buffer))
-            append("\u001b[${row};${col}H")
-            append("\u001b[?25h")
+            append(AnsiRenderer.renderScreenWithCursor(buffer))  // draw cursor with selected shape (block/underline/bar)
+            append("\u001b[${row};${col}H")  // position invisible cursor for input
+            // leave cursor hidden so shape (▌, ▁, |) stays visible
         })
         System.out.flush()
     }
 
-  
     fun clearAndShowBanner(buffer: TerminalBuffer, config: DemoConfig) {
         buffer.clearScreen()
         buffer.setForeground(TerminalColor.BrightCyan)

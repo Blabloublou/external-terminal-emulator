@@ -1,14 +1,10 @@
 package terminal.demo
 
 import terminal.buffer.TerminalBuffer
-import terminal.demo.input.RawKeyReader
-import terminal.demo.input.enableRawMode
-import terminal.demo.input.restoreTerminalMode
-import terminal.demo.input.runLineEditor
 import terminal.model.enum.TerminalColor
 
 /**
- * Interactive demo: type text and see it appear in the buffer with colors.
+ * Interactive demo.
  */
 fun main() {
     val buffer = TerminalBuffer(width = 80, height = 24, maxScrollbackSize = 500)
@@ -19,25 +15,13 @@ fun main() {
     buffer.setForeground(TerminalColor.Default)
 
     val config = DemoConfig
-    fun redraw() = DemoView.redraw(buffer)
 
-    redraw()
+    DemoView.redraw(buffer)
 
-    fun handleLine(line: String): Boolean = processLine(buffer, line, config)
-
-    if (!enableRawMode()) {
-        println("Raw mode not available (run in a terminal).")
-        return
-    }
-    try {
-        runLineEditor(
-            buffer = buffer,
-            reader = RawKeyReader(),
-            onLine = { handleLine(it) },
-            redraw = ::redraw,
-        )
-    } finally {
-        restoreTerminalMode()
+    val reader = System.`in`.bufferedReader()
+    while (true) {
+        val line = reader.readLine() ?: break
+        if (processLine(buffer, line, config)) break
     }
 
     DemoView.restore()

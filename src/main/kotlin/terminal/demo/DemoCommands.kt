@@ -28,17 +28,17 @@ fun processLine(
         }
         line.startsWith("/color ") -> {
             val name = line.removePrefix("/color ").trim().lowercase()
-            config.colorMap[name]?.let { DemoView.setForeground(buffer, it) }
+            config.colorMap[name]?.let { DemoView.setForeground(buffer, it) } ?: DemoView.redraw(buffer)
         }
         line.startsWith("/background ") -> {
             val name = line.removePrefix("/background ").trim().lowercase()
-            config.colorMap[name]?.let { DemoView.setBackground(buffer, it) }
+            config.colorMap[name]?.let { DemoView.setBackground(buffer, it) } ?: DemoView.redraw(buffer)
         }
         line.startsWith("/style ") -> {
             val name = line.removePrefix("/style ").trim().lowercase()
             when (name) {
                 "off", "reset", "none" -> DemoView.clearStyles(buffer)
-                else -> config.styleMap[name]?.let { DemoView.addStyle(buffer, it) }
+                else -> config.styleMap[name]?.let { DemoView.addStyle(buffer, it) } ?: DemoView.redraw(buffer)
             }
         }
         line.startsWith("/cursor ") -> {
@@ -46,7 +46,7 @@ fun processLine(
             config.cursorShapeMap[name]?.let { shape ->
                 buffer.setCursorStyle(buffer.getCursorStyle().copy(shape = shape))
                 DemoView.redraw(buffer)
-            }
+            } ?: DemoView.redraw(buffer)
         }
         line == "/save" || line.startsWith("/save ") -> {
             val name = line.removePrefix("/save").trim().ifBlank { "default" }
@@ -60,19 +60,37 @@ fun processLine(
             buffer.write("Saved configuration \"$name\".\n")
             DemoView.redraw(buffer)
         }
-        line.startsWith("/select ") -> {
-            val name = line.removePrefix("/select ").trim()
-            val saved = config.savedConfigurations[name]
-            if (saved != null) {
-                DemoView.applySavedConfig(buffer, saved)
-                buffer.write("Applied configuration \"$name\".\n")
+        line == "/select" || line.startsWith("/select ") -> {
+            val name = line.removePrefix("/select").trim()
+            if (name.isBlank()) {
+                if (config.savedConfigurations.isEmpty()) {
+                    buffer.write("No saved configurations. Use /save <name> to save one.\n")
+                } else {
+                    buffer.write("Saved configurations: ${config.savedConfigurations.keys.sorted().joinToString(", ")}\n")
+                    buffer.write("Use /select <name> to apply one.\n")
+                }
                 DemoView.redraw(buffer)
             } else {
-                buffer.write("Unknown configuration \"$name\". Use /save to create one.\n")
-                DemoView.redraw(buffer)
+                val saved = config.savedConfigurations[name]
+                if (saved != null) {
+                    DemoView.applySavedConfig(buffer, saved)
+                    buffer.write("Applied configuration \"$name\".\n")
+                    DemoView.redraw(buffer)
+                } else {
+                    val available = config.savedConfigurations.keys.sorted().joinToString(", ").ifEmpty { "(none)" }
+                    buffer.write("Unknown configuration \"$name\". Available: $available\n")
+                    DemoView.redraw(buffer)
+                }
             }
         }
-        else -> DemoView.redraw(buffer)
+        line.startsWith("/") -> {
+            buffer.write("Unknown command: $line  (use /help for the list of commands)\n")
+            DemoView.redraw(buffer)
+        }
+        else -> {
+            buffer.write(line + "\n")
+            DemoView.redraw(buffer)
+        }
     }
     return false
 }
