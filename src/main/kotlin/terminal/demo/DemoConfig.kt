@@ -4,7 +4,7 @@ import terminal.model.enum.Style
 import terminal.model.enum.TerminalColor
 
 /**
- * Demo configuration: color and style name maps, help text.
+ * Demo configuration: color and style name maps, commands, help text.
  */
 object DemoConfig {
     val colorMap: Map<String, TerminalColor> = mapOf(
@@ -32,4 +32,27 @@ object DemoConfig {
         "italic" to Style.Italic,
         "underline" to Style.Underline,
     )
+
+    /** Command list for help. */
+    val commands: List<Pair<String, String>> = listOf(
+        "/help, /h" to "Show this help",
+        "/quit, /q" to "Exit the demo",
+        "/clear" to "Clear screen and show banner",
+        "/resize W H" to "Resize terminal (e.g. /resize 80 24)",
+        "/color <name>" to "Set foreground color",
+        "/background <name>" to "Set background color",
+        "/style <name>" to "Add style (use 'off' to reset)",
+    )
+
+    /** Build full help text from config (commands + color/style names). */
+    fun buildHelpText(): String = buildString {
+        append("--- Commands ---\n")
+        for ((cmd, desc) in commands) {
+            append("  $cmd  $desc\n")
+        }
+        append("\n--- Colors (for /color and /background) ---\n")
+        append("  ${colorMap.keys.sorted().joinToString(", ")}\n")
+        append("\n--- Styles (for /style, use 'off' to reset) ---\n")
+        append("  ${styleMap.keys.joinToString(", ")}\n")
+    }
 }

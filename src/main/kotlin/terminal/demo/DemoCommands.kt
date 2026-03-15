@@ -12,6 +12,7 @@ fun processLine(
 ): Boolean {
     if (line == "/quit" || line == "/q") return true
     when {
+        line == "/help" || line == "/h" -> DemoView.showHelp(buffer, config)
         line == "/clear" -> DemoView.clearAndShowBanner(buffer, config)
         line.startsWith("/resize ") -> {
             val parts = line.removePrefix("/resize ").trim().split(Regex("\\s+"))

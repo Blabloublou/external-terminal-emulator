@@ -29,8 +29,17 @@ object DemoView {
         buffer.setForeground(TerminalColor.BrightCyan)
         buffer.write("Terminal Buffer\n")
         buffer.setForeground(TerminalColor.BrightBlack)
-        buffer.write("Type text and press Enter. Commands: /resize W H, /color, /background, /style, /quit\n\n")
+        buffer.write("Type text and press Enter. Use /help for all commands.\n\n")
         buffer.setForeground(TerminalColor.Default)
+        redraw(buffer)
+    }
+
+    fun showHelp(buffer: TerminalBuffer, config: DemoConfig) {
+        buffer.write("\n")
+        buffer.setForeground(TerminalColor.BrightCyan)
+        buffer.write(config.buildHelpText())
+        buffer.setForeground(TerminalColor.Default)
+        buffer.write("\n")
         redraw(buffer)
     }
 
