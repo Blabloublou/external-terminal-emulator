@@ -63,6 +63,14 @@ object DemoView {
         redraw(buffer)
     }
 
+    fun applySavedConfig(buffer: TerminalBuffer, config: SavedDemoConfig) {
+        buffer.setForeground(config.foreground)
+        buffer.setBackground(config.background)
+        buffer.setStyles(config.styles)
+        buffer.setCursorStyle(config.cursorStyle)
+        redraw(buffer)
+    }
+
     fun appendLine(buffer: TerminalBuffer, line: String) {
         buffer.write(line + "\n")
         redraw(buffer)

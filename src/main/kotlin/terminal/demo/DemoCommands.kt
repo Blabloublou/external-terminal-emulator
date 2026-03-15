@@ -41,6 +41,37 @@ fun processLine(
                 else -> config.styleMap[name]?.let { DemoView.addStyle(buffer, it) }
             }
         }
+        line.startsWith("/cursor ") -> {
+            val name = line.removePrefix("/cursor ").trim().lowercase()
+            config.cursorShapeMap[name]?.let { shape ->
+                buffer.setCursorStyle(buffer.getCursorStyle().copy(shape = shape))
+                DemoView.redraw(buffer)
+            }
+        }
+        line == "/save" || line.startsWith("/save ") -> {
+            val name = line.removePrefix("/save").trim().ifBlank { "default" }
+            val saved = SavedDemoConfig(
+                foreground = buffer.getForeground(),
+                background = buffer.getBackground(),
+                styles = buffer.getStyles(),
+                cursorStyle = buffer.getCursorStyle(),
+            )
+            config.savedConfigurations[name] = saved
+            buffer.write("Saved configuration \"$name\".\n")
+            DemoView.redraw(buffer)
+        }
+        line.startsWith("/select ") -> {
+            val name = line.removePrefix("/select ").trim()
+            val saved = config.savedConfigurations[name]
+            if (saved != null) {
+                DemoView.applySavedConfig(buffer, saved)
+                buffer.write("Applied configuration \"$name\".\n")
+                DemoView.redraw(buffer)
+            } else {
+                buffer.write("Unknown configuration \"$name\". Use /save to create one.\n")
+                DemoView.redraw(buffer)
+            }
+        }
         else -> DemoView.redraw(buffer)
     }
     return false

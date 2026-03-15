@@ -1,12 +1,26 @@
 package terminal.demo
 
+import terminal.model.cursor.CursorStyle
+import terminal.model.enum.CursorShape
 import terminal.model.enum.Style
 import terminal.model.enum.TerminalColor
+
+/**
+ * Snapshot of current display attributes and cursor style for /save and /select.
+ */
+data class SavedDemoConfig(
+    val foreground: TerminalColor,
+    val background: TerminalColor,
+    val styles: Set<Style>,
+    val cursorStyle: CursorStyle,
+)
 
 /**
  * Demo configuration: color and style name maps, commands, help text.
  */
 object DemoConfig {
+    /** Named configurations saved with /save, applied with /select. */
+    val savedConfigurations: MutableMap<String, SavedDemoConfig> = mutableMapOf()
     val colorMap: Map<String, TerminalColor> = mapOf(
         "default" to TerminalColor.Default,
         "black" to TerminalColor.Black,
@@ -33,7 +47,12 @@ object DemoConfig {
         "underline" to Style.Underline,
     )
 
-    /** Command list for help. */
+    val cursorShapeMap: Map<String, CursorShape> = mapOf(
+        "block" to CursorShape.Block,
+        "underline" to CursorShape.Underline,
+        "bar" to CursorShape.Bar,
+    )
+
     val commands: List<Pair<String, String>> = listOf(
         "/help, /h" to "Show this help",
         "/quit, /q" to "Exit the demo",
@@ -42,9 +61,11 @@ object DemoConfig {
         "/color <name>" to "Set foreground color",
         "/background <name>" to "Set background color",
         "/style <name>" to "Add style (use 'off' to reset)",
+        "/cursor <name>" to "Set cursor shape (block, underline, bar)",
+        "/save [name]" to "Save current config (colors, style, cursor)",
+        "/select <name>" to "Apply a saved configuration",
     )
 
-    /** Build full help text from config (commands + color/style names). */
     fun buildHelpText(): String = buildString {
         append("--- Commands ---\n")
         for ((cmd, desc) in commands) {
@@ -54,5 +75,11 @@ object DemoConfig {
         append("  ${colorMap.keys.sorted().joinToString(", ")}\n")
         append("\n--- Styles (for /style, use 'off' to reset) ---\n")
         append("  ${styleMap.keys.joinToString(", ")}\n")
+        append("\n--- Cursor shapes (for /cursor) ---\n")
+        append("  ${cursorShapeMap.keys.joinToString(", ")}\n")
+        if (savedConfigurations.isNotEmpty()) {
+            append("\n--- Saved configurations (/select <name>) ---\n")
+            append("  ${savedConfigurations.keys.sorted().joinToString(", ")}\n")
+        }
     }
 }
