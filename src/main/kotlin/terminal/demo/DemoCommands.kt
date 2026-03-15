@@ -43,10 +43,29 @@ fun processLine(
         }
         line.startsWith("/cursor ") -> {
             val name = line.removePrefix("/cursor ").trim().lowercase()
-            config.cursorShapeMap[name]?.let { shape ->
-                buffer.setCursorStyle(buffer.getCursorStyle().copy(shape = shape))
-                DemoView.redraw(buffer)
-            } ?: DemoView.redraw(buffer)
+            val style = buffer.getCursorStyle()
+            when (name) {
+                "hide" -> {
+                    buffer.setCursorStyle(style.copy(visible = false))
+                    DemoView.redraw(buffer)
+                }
+                "show" -> {
+                    buffer.setCursorStyle(style.copy(visible = true))
+                    DemoView.redraw(buffer)
+                }
+                "blink" -> {
+                    buffer.setCursorStyle(style.copy(blink = true))
+                    DemoView.redraw(buffer)
+                }
+                "noblink" -> {
+                    buffer.setCursorStyle(style.copy(blink = false))
+                    DemoView.redraw(buffer)
+                }
+                else -> config.cursorShapeMap[name]?.let { shape ->
+                    buffer.setCursorStyle(style.copy(shape = shape))
+                    DemoView.redraw(buffer)
+                } ?: DemoView.redraw(buffer)
+            }
         }
         line == "/save" || line.startsWith("/save ") -> {
             val name = line.removePrefix("/save").trim().ifBlank { "default" }

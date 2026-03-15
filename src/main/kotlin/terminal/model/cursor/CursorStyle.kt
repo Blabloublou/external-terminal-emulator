@@ -7,7 +7,7 @@ import terminal.model.enum.CursorShape
  */
 data class CursorStyle(
     val visible: Boolean = true,
-    val shape: CursorShape = CursorShape.Block,
+    val shape: CursorShape = CursorShape.Bar,
     val blink: Boolean = true,
 ) {
     companion object {

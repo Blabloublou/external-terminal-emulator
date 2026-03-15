@@ -1,24 +1,46 @@
 package terminal.demo
 
 import terminal.buffer.TerminalBuffer
+import terminal.model.enum.CursorShape
 import terminal.model.enum.Style
 import terminal.model.enum.TerminalColor
 import terminal.render.AnsiRenderer
+
+/** Used when redraw is called without explicit blink phase (e.g. after Enter). */
+var blinkPhase: Boolean = true
+
+private fun cursorShapeSequence(shape: CursorShape, blink: Boolean): String {
+    val base = when (shape) {
+        CursorShape.Block -> if (blink) 1 else 2
+        CursorShape.Underline -> if (blink) 3 else 4
+        CursorShape.Bar -> if (blink) 5 else 6
+    }
+    return "\u001b[$base q"
+}
 
 /**
  * Renders the demo screen.
  */
 object DemoView {
 
-    fun redraw(buffer: TerminalBuffer) {
+    fun redraw(buffer: TerminalBuffer, blinkCursorVisible: Boolean? = null) {
+        val phase = blinkCursorVisible ?: blinkPhase
+        val cursorStyle = buffer.getCursorStyle()
+        val showCursor = cursorStyle.visible && (!cursorStyle.blink || phase)
         val row = buffer.getCursorRow() + 1
-        val col = buffer.getCursorColumn() + 1
+        val displayCol = buffer.getDisplayColumn(buffer.getCursorRow(), buffer.getCursorColumn())
         print(buildString {
-            append("\u001b[?25l")  // hide terminal cursor so our drawn cursor is visible
+            append("\u001b[?25l")
             append("\u001b[2J\u001b[H")
-            append(AnsiRenderer.renderScreenWithCursor(buffer))  // draw cursor with selected shape (block/underline/bar)
-            append("\u001b[${row};${col}H")  // position invisible cursor for input
-            // leave cursor hidden so shape (▌, ▁, |) stays visible
+            if (showCursor) {
+                append(AnsiRenderer.renderScreen(buffer))
+                append("\u001b[${row};${displayCol}H")
+                append(cursorShapeSequence(cursorStyle.shape, cursorStyle.blink))
+                append("\u001b[?25h")
+            } else {
+                append(AnsiRenderer.renderScreenWithCursor(buffer, showCursorNow = false))
+                append("\u001b[${row};${displayCol}H")
+            }
         })
         System.out.flush()
     }

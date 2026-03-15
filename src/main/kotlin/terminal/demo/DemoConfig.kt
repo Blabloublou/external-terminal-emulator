@@ -60,7 +60,7 @@ object DemoConfig {
         "/color <name>" to "Set foreground color",
         "/background <name>" to "Set background color",
         "/style <name>" to "Add style (use 'off' to reset)",
-        "/cursor <name>" to "Set cursor shape (block, underline, bar)",
+        "/cursor <name>" to "Shape: block, underline, bar. Visibility: hide, show. Blink: blink, noblink",
         "/save [name]" to "Save current config (colors, style, cursor)",
         "/select <name>" to "Apply a saved configuration",
     )
@@ -74,8 +74,9 @@ object DemoConfig {
         append("  ${colorMap.keys.sorted().joinToString(", ")}\n")
         append("\n--- Styles (for /style, use 'off' to reset) ---\n")
         append("  ${styleMap.keys.joinToString(", ")}\n")
-        append("\n--- Cursor shapes (for /cursor) ---\n")
-        append("  ${cursorShapeMap.keys.joinToString(", ")}\n")
+        append("\n--- Cursor (/cursor) ---\n")
+        append("  Shapes: ${cursorShapeMap.keys.joinToString(", ")}\n")
+        append("  Visibility: hide, show. Blink: blink, noblink\n")
         if (savedConfigurations.isNotEmpty()) {
             append("\n--- Saved configurations (/select <name>) ---\n")
             append("  ${savedConfigurations.keys.sorted().joinToString(", ")}\n")

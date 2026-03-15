@@ -8,7 +8,6 @@ RUN gradle dependencies --quiet
 COPY src src
 RUN gradle installDist --no-daemon --quiet
 
-# Run the app directly so stdin is attached (gradle run does not forward stdin)
 FROM eclipse-temurin:17-jre
 
 WORKDIR /app

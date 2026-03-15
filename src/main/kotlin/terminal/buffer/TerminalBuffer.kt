@@ -175,4 +175,23 @@ class TerminalBuffer(
     fun scrollbackSize(): Int = scrollback.size
 
     fun totalLineCount(): Int = scrollback.size + _height
+
+    /**
+     * Returns the 1-based display column for the terminal cursor when the buffer cursor
+     * is at (screenRow, bufferColumn). Accounts for wide characters: normal cell = 1 column,
+     * wide start = 2 columns, continuation = 0.
+     */
+    fun getDisplayColumn(screenRow: Int, bufferColumn: Int): Int {
+        val lineIndex = scrollbackSize() + screenRow.coerceIn(0, _height - 1)
+        val col = bufferColumn.coerceIn(0, _width)
+        var displayCol = 1
+        for (c in 0 until col) {
+            when (getAttributes(lineIndex, c)?.wideCharRole) {
+                WideCharRole.WideContinuation -> { /* +0 */ }
+                WideCharRole.WideStart -> displayCol += 2
+                else -> displayCol += 1
+            }
+        }
+        return displayCol
+    }
 }

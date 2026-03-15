@@ -64,13 +64,22 @@ object AnsiRenderer {
     fun renderScreen(buffer: TerminalBuffer): String =
         renderScreenInternal(buffer, cursorRow = -1, cursorCol = -1)
 
-    fun renderScreenWithCursor(buffer: TerminalBuffer, cursorChar: Char? = null): String {
+    /**
+     * @param cursorChar override character for the cursor, or null to use shape default
+     * @param showCursorNow when non-null, overrides style.visible (e.g. for blink: false = hide during off phase)
+     */
+    fun renderScreenWithCursor(
+        buffer: TerminalBuffer,
+        cursorChar: Char? = null,
+        showCursorNow: Boolean? = null,
+    ): String {
         val style = buffer.getCursorStyle()
-        if (!style.visible) return renderScreenInternal(buffer, -1, -1, ' ')
+        val actuallyShow = showCursorNow ?: style.visible
+        if (!actuallyShow) return renderScreenInternal(buffer, -1, -1, ' ')
         val char = cursorChar ?: when (style.shape) {
             CursorShape.Block -> '▌'
             CursorShape.Underline -> '▁'
-            CursorShape.Bar -> '|'
+            CursorShape.Bar -> '|' // ASCII pipe = thin vertical bar
         }
         return renderScreenInternal(buffer, buffer.getCursorRow(), buffer.getCursorColumn(), char)
     }

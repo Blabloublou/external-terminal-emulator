@@ -5,6 +5,7 @@ import terminal.model.enum.TerminalColor
 
 /**
  * Interactive demo.
+ * No blink thread: redraw only on Enter, so typed text (terminal echo) stays visible until you submit.
  */
 fun main() {
     val buffer = TerminalBuffer(width = 80, height = 24, maxScrollbackSize = 500)
@@ -23,6 +24,5 @@ fun main() {
         val line = reader.readLine() ?: break
         if (processLine(buffer, line, config)) break
     }
-
     DemoView.restore()
 }
