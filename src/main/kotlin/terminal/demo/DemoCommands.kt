@@ -1,0 +1,34 @@
+package terminal.demo
+
+import terminal.buffer.TerminalBuffer
+
+/**
+ * Parses demo input and delegates each command to DemoView.
+ */
+fun processLine(
+    buffer: TerminalBuffer,
+    line: String,
+    config: DemoConfig,
+): Boolean {
+    if (line == "/quit" || line == "/q") return true
+    when {
+        line == "/clear" -> DemoView.clearAndShowBanner(buffer, config)
+        line.startsWith("/color ") -> {
+            val name = line.removePrefix("/color ").trim().lowercase()
+            config.colorMap[name]?.let { DemoView.setForeground(buffer, it) }
+        }
+        line.startsWith("/background ") -> {
+            val name = line.removePrefix("/background ").trim().lowercase()
+            config.colorMap[name]?.let { DemoView.setBackground(buffer, it) }
+        }
+        line.startsWith("/style ") -> {
+            val name = line.removePrefix("/style ").trim().lowercase()
+            when (name) {
+                "off", "reset", "none" -> DemoView.clearStyles(buffer)
+                else -> config.styleMap[name]?.let { DemoView.addStyle(buffer, it) }
+            }
+        }
+        else -> DemoView.redraw(buffer)
+    }
+    return false
+}
