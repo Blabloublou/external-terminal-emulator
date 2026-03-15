@@ -64,10 +64,50 @@ object AnsiRenderer {
     fun renderScreen(buffer: TerminalBuffer): String =
         renderScreenInternal(buffer, cursorRow = -1, cursorCol = -1)
 
-    /**
-     * @param cursorChar override character for the cursor, or null to use shape default
-     * @param showCursorNow when non-null, overrides style.visible (e.g. for blink: false = hide during off phase)
-     */
+    fun renderLine(
+        buffer: TerminalBuffer,
+        row: Int,
+        cursorRow: Int = -1,
+        cursorCol: Int = -1,
+        cursorChar: Char = '▌',
+    ): String {
+        val sb = StringBuilder()
+        val width = buffer.width
+        val lineIndex = buffer.scrollbackSize() + row.coerceIn(0, buffer.height - 1)
+        var lastFg: TerminalColor? = null
+        var lastBg: TerminalColor? = null
+        var lastStyles: Set<Style>? = null
+        for (col in 0 until width) {
+            val cell = buffer.getAttributes(lineIndex, col) ?: Cell.EMPTY
+            if (cell.wideCharRole == WideCharRole.WideContinuation) continue
+            if (row == cursorRow && col == cursorCol) {
+                sb.append(RESET).append("\u001b[7m").append(cursorChar).append(RESET)
+                lastFg = null; lastBg = null; lastStyles = null
+                continue
+            }
+            val fg = cell.foreground
+            val bg = cell.background
+            val styles = cell.styles
+            val isDefaultCell = fg == TerminalColor.Default && bg == TerminalColor.Default && styles.isEmpty()
+            val hadFormatting = (lastFg != null && lastFg != TerminalColor.Default) ||
+                (lastBg != null && lastBg != TerminalColor.Default) ||
+                (lastStyles != null && lastStyles.isNotEmpty())
+            if (isDefaultCell && hadFormatting) {
+                sb.append(RESET)
+                lastFg = null; lastBg = null; lastStyles = null
+            } else {
+                val codes = mutableListOf<String>()
+                if (fg != lastFg) fgCode(fg)?.let { codes.add(it) }
+                if (bg != lastBg) bgCode(bg)?.let { codes.add(it) }
+                if (styles != lastStyles) styleCodes(styles).forEach { codes.add(it) }
+                lastFg = fg; lastBg = bg; lastStyles = styles
+                if (codes.isNotEmpty()) sb.append("\u001b[").append(codes.joinToString(";")).append("m")
+            }
+            sb.append(cell.charForDisplay())
+        }
+        return sb.append(RESET).toString()
+    }
+
     fun renderScreenWithCursor(
         buffer: TerminalBuffer,
         cursorChar: Char? = null,

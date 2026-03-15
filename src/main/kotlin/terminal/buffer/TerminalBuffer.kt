@@ -113,6 +113,11 @@ class TerminalBuffer(
         BufferInsert.performInsert(this, text)
     }
 
+    fun writeOnLine(row: Int, text: String) {
+        fillLine(row, null)
+        BufferWrite.performWriteOnLine(this, row, text)
+    }
+
     fun fillLine(row: Int, char: Char?) {
         val r = row.coerceIn(0, _height - 1)
         val line = screen[r]
@@ -176,18 +181,13 @@ class TerminalBuffer(
 
     fun totalLineCount(): Int = scrollback.size + _height
 
-    /**
-     * Returns the 1-based display column for the terminal cursor when the buffer cursor
-     * is at (screenRow, bufferColumn). Accounts for wide characters: normal cell = 1 column,
-     * wide start = 2 columns, continuation = 0.
-     */
     fun getDisplayColumn(screenRow: Int, bufferColumn: Int): Int {
         val lineIndex = scrollbackSize() + screenRow.coerceIn(0, _height - 1)
         val col = bufferColumn.coerceIn(0, _width)
         var displayCol = 1
         for (c in 0 until col) {
             when (getAttributes(lineIndex, c)?.wideCharRole) {
-                WideCharRole.WideContinuation -> { /* +0 */ }
+                WideCharRole.WideContinuation -> {}
                 WideCharRole.WideStart -> displayCol += 2
                 else -> displayCol += 1
             }

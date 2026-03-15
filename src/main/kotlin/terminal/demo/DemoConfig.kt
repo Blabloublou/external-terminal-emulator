@@ -29,6 +29,7 @@ object DemoConfig {
         "yellow" to TerminalColor.Yellow,
         "cyan" to TerminalColor.Cyan,
         "magenta" to TerminalColor.Magenta,
+        "purple" to TerminalColor.Magenta,
         "white" to TerminalColor.White,
         "bright_black" to TerminalColor.BrightBlack,
         "bright_red" to TerminalColor.BrightRed,
@@ -36,6 +37,7 @@ object DemoConfig {
         "bright_yellow" to TerminalColor.BrightYellow,
         "bright_blue" to TerminalColor.BrightBlue,
         "bright_magenta" to TerminalColor.BrightMagenta,
+        "bright_purple" to TerminalColor.BrightMagenta,
         "bright_cyan" to TerminalColor.BrightCyan,
         "bright_white" to TerminalColor.BrightWhite,
     )
@@ -55,6 +57,8 @@ object DemoConfig {
     val commands: List<Pair<String, String>> = listOf(
         "/help, /h" to "Show this help",
         "/quit, /q" to "Exit the demo",
+        "← →" to "Move cursor on the line (real terminal only)",
+        "↑ ↓ (line empty)" to "Navigate command history (real terminal only)",
         "/clear" to "Clear screen and show banner",
         "/resize W H" to "Resize terminal (e.g. /resize 80 24)",
         "/color <name>" to "Set foreground color",

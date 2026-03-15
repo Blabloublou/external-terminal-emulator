@@ -1,13 +1,21 @@
 package terminal.demo
 
 import terminal.buffer.TerminalBuffer
+import terminal.model.CharWidth
 import terminal.model.enum.CursorShape
 import terminal.model.enum.Style
 import terminal.model.enum.TerminalColor
 import terminal.render.AnsiRenderer
 
-/** Used when redraw is called without explicit blink phase (e.g. after Enter). */
+/** Used when redraw is called without explicit blink phase. */
 var blinkPhase: Boolean = true
+
+private fun columnFromCharIndex(s: String, charIndex: Int): Int {
+    val i = charIndex.coerceIn(0, s.length)
+    var col = 0
+    for (j in 0 until i) col += CharWidth.of(s[j])
+    return col
+}
 
 private fun cursorShapeSequence(shape: CursorShape, blink: Boolean): String {
     val base = when (shape) {
@@ -27,19 +35,29 @@ object DemoView {
         val phase = blinkCursorVisible ?: blinkPhase
         val cursorStyle = buffer.getCursorStyle()
         val showCursor = cursorStyle.visible && (!cursorStyle.blink || phase)
-        val row = buffer.getCursorRow() + 1
-        val displayCol = buffer.getDisplayColumn(buffer.getCursorRow(), buffer.getCursorColumn())
+        val cursorRow = buffer.getCursorRow()
+        val cursorCol = buffer.getCursorColumn()
+        val displayCol = buffer.getDisplayColumn(cursorRow, cursorCol)
+        val cursorChar = when (cursorStyle.shape) {
+            CursorShape.Block -> '▌'
+            CursorShape.Underline -> '▁'
+            CursorShape.Bar -> '|'
+        }
         print(buildString {
             append("\u001b[?25l")
-            append("\u001b[2J\u001b[H")
+            append("\u001b[H\u001b[2J")
+            for (row in 0 until buffer.height) {
+                append("\u001b[${row + 1};1H")
+                if (showCursor) {
+                    append(AnsiRenderer.renderLine(buffer, row))
+                } else {
+                    append(AnsiRenderer.renderLine(buffer, row, cursorRow, cursorCol, cursorChar))
+                }
+            }
+            append("\u001b[${cursorRow + 1};${displayCol}H")
             if (showCursor) {
-                append(AnsiRenderer.renderScreen(buffer))
-                append("\u001b[${row};${displayCol}H")
                 append(cursorShapeSequence(cursorStyle.shape, cursorStyle.blink))
                 append("\u001b[?25h")
-            } else {
-                append(AnsiRenderer.renderScreenWithCursor(buffer, showCursorNow = false))
-                append("\u001b[${row};${displayCol}H")
             }
         })
         System.out.flush()
@@ -97,8 +115,16 @@ object DemoView {
         redraw(buffer)
     }
 
+    fun refreshInputLine(buffer: TerminalBuffer, lineContent: String, cursorCharIndex: Int) {
+        val lastRow = buffer.height - 1
+        buffer.writeOnLine(lastRow, lineContent)
+        val col = columnFromCharIndex(lineContent, cursorCharIndex).coerceIn(0, (buffer.width - 1).coerceAtLeast(0))
+        buffer.setCursor(col, lastRow)
+        redraw(buffer)
+    }
+
     fun restore() {
-        print("\u001b[2J\u001b[H\u001b[?25h")
+        print("\u001b[2J\u001b[H\u001b[?25h\u001b[1 q")
         System.out.flush()
     }
 }
