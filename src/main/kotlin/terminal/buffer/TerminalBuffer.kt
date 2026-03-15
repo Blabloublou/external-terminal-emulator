@@ -1,6 +1,7 @@
 package terminal.buffer
 
 import terminal.model.Cell
+import terminal.model.CharWidth
 import terminal.model.cursor.Cursor
 import terminal.model.cursor.CursorStyle
 import terminal.model.enum.Style
@@ -47,7 +48,31 @@ class TerminalBuffer(
         cursor.row = cursor.row.coerceIn(0, _height - 1)
     }
 
-  
+    internal fun cellWithCurrentAttributes(char: Char?, role: WideCharRole = WideCharRole.Normal): Cell =
+        Cell(char, currentForeground, currentBackground, currentStyles.toSet(), role)
+
+    internal fun clearWideCharAt(row: Int, col: Int) {
+        if (row !in 0 until _height || col !in 0 until _width) return
+        val line = screen[row]
+        when (line[col].wideCharRole) {
+            WideCharRole.WideStart -> {
+                line[col] = Cell.EMPTY
+                if (col + 1 < _width) line[col + 1] = Cell.EMPTY
+            }
+            WideCharRole.WideContinuation -> {
+                if (col > 0) line[col - 1] = Cell.EMPTY
+                line[col] = Cell.EMPTY
+            }
+            WideCharRole.Normal -> { }
+        }
+    }
+
+    internal fun snapCursorOffContinuation() {
+        if (cursor.row !in 0 until _height || cursor.column !in 0 until _width) return
+        if (screen[cursor.row][cursor.column].wideCharRole == WideCharRole.WideContinuation && cursor.column > 0) {
+            cursor.column = cursor.column - 1
+        }
+    }
 
     private fun emptyLine(): MutableList<Cell> = MutableList(_width) { Cell.EMPTY }
 
@@ -90,8 +115,23 @@ class TerminalBuffer(
 
     fun fillLine(row: Int, char: Char?) {
         val r = row.coerceIn(0, _height - 1)
-        val cell = cellWithCurrentAttributes(char)
-        for (c in 0 until _width) screen[r][c] = cell
+        val line = screen[r]
+        if (char == null || CharWidth.of(char) == 1) {
+            val cell = cellWithCurrentAttributes(char)
+            for (c in 0 until _width) line[c] = cell
+        } else {
+            var c = 0
+            while (c < _width) {
+                if (c + 1 < _width) {
+                    line[c] = cellWithCurrentAttributes(char, WideCharRole.WideStart)
+                    line[c + 1] = Cell(null, TerminalColor.Default, currentBackground, emptySet(), WideCharRole.WideContinuation)
+                    c += 2
+                } else {
+                    line[c] = cellWithCurrentAttributes(null)
+                    c++
+                }
+            }
+        }
     }
 
     fun insertLineAtBottom() {
@@ -111,7 +151,6 @@ class TerminalBuffer(
         scrollback.clear()
     }
 
-    /** Resize the screen to [newWidth]×[newHeight]. Content is truncated or padded; cursor is clamped. */
     fun resize(newWidth: Int, newHeight: Int) {
         BufferResize.apply(this, newWidth, newHeight)
     }

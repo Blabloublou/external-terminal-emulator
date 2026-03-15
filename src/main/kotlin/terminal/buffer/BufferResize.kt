@@ -20,7 +20,12 @@ object BufferResize {
                     while (line.size > w) line.removeAt(line.size - 1)
                 }
                 for (i in buffer.scrollback.indices) {
-                    buffer.scrollback[i] = buffer.scrollback[i].take(w)
+                    val taken = buffer.scrollback[i].take(w)
+                    buffer.scrollback[i] = if (taken.isNotEmpty() && taken.last().wideCharRole == WideCharRole.WideStart) {
+                        taken.dropLast(1) + Cell.EMPTY
+                    } else {
+                        taken
+                    }
                 }
             } else {
                 for (line in buffer.screen) {
